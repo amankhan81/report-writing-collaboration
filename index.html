@@ -34,10 +34,10 @@ textarea{min-height:230px;resize:vertical;font-size:16px;line-height:1.7}
 <main id="app"></main>
 <script>
 const URL_='https://script.google.com/macros/s/AKfycbzHkPjGlX8dp5sEEPNtoePLPjYywEVERxvp0gw1CMHR4Hn_ItIhDZe3aCFXsb5HaY6H7A/exec'; // Apps Script /exec URL
-const PARTS=['Introduction','Body 1','Body 2','Conclusion'],TARGET=[40,60,60,40];
-const GUIDE=[['Say who the report is for and why you are writing','Open formally','Preview what the report covers'],['One clear focus with a heading','Facts, examples and reasons','Accurate, formal language'],['A new focus that links to Body 1','Facts, examples and reasons','Use linking words'],['Sum up the main findings','Give a clear recommendation','End formally']];
-const STARTS=[['This report aims to…','The purpose of this report is to…'],['Firstly, …','It was found that…'],['Furthermore, …','Another issue is…'],['In conclusion, …','It is recommended that…']];
-let role='',key='',me=-1,S=null,ver=-1,saveT,built='';
+const PARTS=['Introduction','Body 1','Body 2','Conclusion'],TARGET=[40,60,60,40],HEADS=['Introduction','What Went Well','Areas for Improvement','Conclusion and Recommendation'];
+const GUIDE=[['Say who the report is for and why you are writing','Open formally','Preview what the report covers'],['Describe what went well','Support each point with facts or examples','Accurate, formal language'],['Describe what needs to improve','Explain why, with facts or examples','Link back to Body 1 (e.g. However, …)'],['Sum up the main findings','Give clear, practical recommendations','End formally']];
+const STARTS=[['This report aims to…','The purpose of this report is to…'],['One of the main strengths was…','It was clear that…'],['However, one area that needs improvement is…','More could be done to…'],['In conclusion, …','It is recommended that…']];
+let tT,role='',key='',me=-1,S=null,ver=-1,saveT,built='';
 const $=s=>document.querySelector(s),esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const wc=t=>(t.trim().match(/\S+/g)||[]).length,setMsg=t=>$('#msg').textContent=t;
 async function post(b){const r=await fetch(URL_,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(b)});return r.json()}
@@ -54,25 +54,25 @@ function render(){role==='teacher'?renderT():renderS()}
 /* ---------- STUDENT ---------- */
 function renderS(){
  if(!S.sid){$('#app').innerHTML='<div class="card"><h2>No task yet</h2><p>Your teacher has not started a session. This page updates by itself.</p></div>';built='';return}
- if(me<0){$('#app').innerHTML=`<div class="card" style="max-width:520px;margin:30px auto"><h2>Who are you?</h2><div class="task card"><b>Task</b><br>${esc(S.task)}</div>${S.names.map((n,i)=>`<button class="alt" style="display:block;width:100%;margin:6px 0" data-i="${i}">${esc(n||'Student '+(i+1))} — writes the ${PARTS[i]}</button>`).join('')}</div>`;
+ if(me<0){$('#app').innerHTML=`<div class="card" style="max-width:520px;margin:30px auto"><h2>Who are you?</h2><div class="task card"><b>Task</b><br>${esc(S.task)}</div>${S.names.map((n,i)=>`<button class="alt" style="display:block;width:100%;margin:6px 0" data-i="${i}">${esc(n||'Student '+(i+1))} — writes ${HEADS[i]}</button>`).join('')}</div>`;
   document.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{me=+b.dataset.i;built='';render()});return}
  const id=S.sid+me,p=S.parts[me];
- if(built!==id){built=id;$('#app').innerHTML=`<div class="card task"><b>Task</b><br>${esc(S.task)}</div>
- <div class="card"><div class="row"><h2 class="grow">${PARTS[me]} <span class="mono">${esc(p.student)}</span></h2><span id="stt" class="chip"></span></div>
+ if(built!==id){built=id;$('#app').innerHTML=`<div class="card task"><b>Task</b><br>${esc(S.task)}</div><div class="card hide" id="ttl"></div>
+ <div class="card"><div class="row"><h2 class="grow">${HEADS[me]} <span class="mono">${esc(p.student)}</span></h2><span id="stt" class="chip"></span></div>
  <ul class="ck">${GUIDE[me].map(g=>`<li>${g}</li>`).join('')}</ul>
  <div class="row" style="margin-bottom:8px">${STARTS[me].map(s=>`<button class="alt st">${s}</button>`).join('')}</div>
- <textarea id="ta" placeholder="Write your ${PARTS[me]} here…">${esc(p.text)}</textarea>
+ <textarea id="ta" placeholder="Write your ${HEADS[me]} here…">${esc(p.text)}</textarea>
  <div class="row" style="margin-top:8px"><span class="mono" id="wc"></span><div class="bar grow"><i id="br"></i></div><button class="alt" id="hp"></button><button class="gold" id="rd">Ready for review</button></div></div>
  <div id="mine"></div><h3>The whole report so far</h3><div id="others"></div>`;
  const ta=$('#ta');ta.oninput=()=>{upW();queue('Writing')};ta.onblur=()=>flush();
  document.querySelectorAll('.st').forEach(b=>b.onclick=()=>{ta.value+=(ta.value&&!/\s$/.test(ta.value)?' ':'')+b.textContent.replace('…','');ta.focus();upW();queue('Writing')});
  $('#hp').onclick=()=>{const h=!S.parts[me].help;S.parts[me].help=h;queue(null,h)};
  $('#rd').onclick=()=>{flush('Ready')};upW()}
- const stt=$('#stt');stt.textContent=p.status;stt.className='chip '+p.status;
+ const stt=$('#stt');stt.textContent=p.status;stt.className='chip '+p.status;const tt=$('#ttl');tt.classList.toggle('hide',!S.title);tt.innerHTML='<span class="mono">Report title</span><h2>'+esc(S.title)+'</h2>';
  $('#hp').textContent=p.help?'Cancel help request':'I need help';
  $('#mine').innerHTML=S.comments.filter(c=>c.part===PARTS[me]).reverse().map(c=>`<div class="cm ${c.done?'done':''}"><b>${esc(c.tag)}</b> · ${esc(c.text)} ${c.done?'':`<button class="alt" style="padding:2px 10px" data-d="${c.id}">Done</button>`}</div>`).join('')||'<p class="mono">Teacher comments for your part appear here.</p>';
  document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>post({action:'done',id:b.dataset.d}));
- $('#others').innerHTML=PARTS.map((n,i)=>i===me?'':`<div class="card"><b>${n}</b> <span class="mono">${esc(S.parts[i].student)} · ${S.parts[i].words} words</span><div class="txt">${esc(S.parts[i].text)||'<span class="mono">Not started</span>'}</div></div>`).join('')}
+ $('#others').innerHTML=PARTS.map((n,i)=>i===me?'':`<div class="card"><b>${HEADS[i]}</b> <span class="mono">${esc(S.parts[i].student)} · ${S.parts[i].words} words</span><div class="txt">${esc(S.parts[i].text)||'<span class="mono">Not started</span>'}</div></div>`).join('')}
 function upW(){const n=wc($('#ta').value),t=TARGET[me];$('#wc').textContent=n+' / ~'+t+' words';const b=$('#br');b.style.width=Math.min(100,n/t*100)+'%';b.className=n>=t?'full':''}
 function queue(status,help){clearTimeout(saveT);setMsg('Typing…');saveT=setTimeout(()=>flush(status,help),1600)}
 async function flush(status){clearTimeout(saveT);if(!S||me<0)return;const p=S.parts[me],ta=$('#ta');if(!ta)return;
@@ -83,25 +83,26 @@ function renderT(){
  if(built!==(S.sid||'none')){built=S.sid||'none';
   $('#app').innerHTML=`<div class="card"><div class="row"><h3 class="grow">${S.sid?'Live board':'Start a session'}</h3><button class="alt" id="nw">New task</button>${S.sid?'<button class="alt" id="stb">Stitch report</button>':''}</div>
   <div id="nf" class="${S.sid?'hide':''}"><textarea id="tt" style="min-height:90px" placeholder="Paste the report task…"></textarea>
-  <div class="row" style="margin-top:8px">${PARTS.map((p,i)=>`<input class="nm grow" placeholder="${p} — student name" style="min-width:150px">`).join('')}</div><button class="gold" style="margin-top:8px" id="sv">Start session</button></div>
-  ${S.sid?`<div class="task card" style="margin:10px 0 0"><b>Task</b><br>${esc(S.task)}</div>`:''}</div>
+  <div class="row" style="margin-top:8px">${PARTS.map((p,i)=>`<input class="nm grow" placeholder="${HEADS[i]} — student name" style="min-width:150px">`).join('')}</div><button class="gold" style="margin-top:8px" id="sv">Start session</button></div>
+  ${S.sid?`<div class="task card" style="margin:10px 0 0"><b>Task</b><br>${esc(S.task)}</div><label class="mono" for="ti">Report title (students see it live)</label><input id="ti" placeholder="Type the title during the session…" style="font-size:22px;margin-top:4px">`:''}</div>
   <div class="card hide" id="stitch"><div class="row"><h3 class="grow">Stitched report</h3><button class="alt" onclick="print()">Print / save PDF</button></div><div id="stb2"></div></div>
-  <div class="grid">${S.sid?PARTS.map((p,i)=>`<div class="card"><div class="row"><h3 class="grow">${p}</h3><span class="chip" id="st${i}"></span><span class="chip help hide" id="hp${i}">needs help</span></div>
+  <div class="grid">${S.sid?PARTS.map((p,i)=>`<div class="card"><div class="row"><h3 class="grow">${HEADS[i]}</h3><span class="chip" id="st${i}"></span><span class="chip help hide" id="hp${i}">needs help</span></div>
   <div class="mono" id="mt${i}"></div><div class="txt" id="tx${i}"></div><div id="cm${i}"></div>
-  <div class="row" style="margin-top:8px"><select id="tg${i}" style="width:auto"><option>Praise</option><option>Fix</option><option>Think about this</option><option>Language</option></select><input id="ci${i}" class="grow" placeholder="Comment for ${esc(S.parts[i].student||p)}"><button id="cs${i}">Send</button></div>
+  <div class="row" style="margin-top:8px"><select id="tg${i}" style="width:auto"><option>Praise</option><option>Fix</option><option>Think about this</option><option>Language</option></select><input id="ci${i}" class="grow" placeholder="Comment for ${esc(S.parts[i].student||HEADS[i])}"><button id="cs${i}">Send</button></div>
   <button class="alt" style="margin-top:8px" id="rt${i}">Return for revision</button></div>`).join(''):''}</div>`;
   $('#nw').onclick=()=>$('#nf').classList.toggle('hide');
   $('#sv').onclick=async()=>{const task=$('#tt').value.trim();if(!task)return;await post({action:'newSession',key,task,names:[...document.querySelectorAll('.nm')].map(x=>x.value.trim())});built='';load()};
-  if(S.sid){$('#stb').onclick=()=>$('#stitch').classList.toggle('hide');
+  if(S.sid){$('#stb').onclick=()=>$('#stitch').classList.toggle('hide');$('#ti').value=S.title||'';$('#ti').oninput=()=>{clearTimeout(tT);tT=setTimeout(()=>post({action:'setTitle',key,sid:S.sid,title:$('#ti').value}),900)};
    PARTS.forEach((p,i)=>{$('#cs'+i).onclick=async()=>{const t=$('#ci'+i).value.trim();if(!t)return;$('#ci'+i).value='';await post({action:'comment',key,sid:S.sid,part:p,tag:$('#tg'+i).value,text:t})};
     $('#rt'+i).onclick=()=>post({action:'returnPart',key,sid:S.sid,part:p})})}}
  if(!S.sid)return;
+ if(document.activeElement!==$('#ti'))$('#ti').value=S.title||'';
  PARTS.forEach((p,i)=>{const d=S.parts[i],ago=Math.round((Date.now()-new Date(d.updated))/1000),idle=ago>120&&d.status!=='Ready';
   const st=$('#st'+i);st.textContent=idle?'idle':d.status;st.className='chip '+(idle?'idle':d.status);
   $('#hp'+i).classList.toggle('hide',!d.help);
   $('#mt'+i).textContent=`${d.student||'—'} · ${d.words}/~${TARGET[i]} words · active ${ago<60?ago+'s':Math.round(ago/60)+'m'} ago`;
   $('#tx'+i).textContent=d.text||'Not started';
   $('#cm'+i).innerHTML=S.comments.filter(c=>c.part===p).reverse().map(c=>`<div class="cm ${c.done?'done':''}"><b>${esc(c.tag)}</b> · ${esc(c.text)} ${c.done?'<span class="mono">✓ done</span>':''}</div>`).join('')});
- $('#stb2').innerHTML=PARTS.map((p,i)=>`<h3>${p}</h3><p style="white-space:pre-wrap">${esc(S.parts[i].text)}</p>`).join('')}
+ $('#stb2').innerHTML=(S.title?'<h2>'+esc(S.title)+'</h2>':'')+PARTS.map((p,i)=>`<h3>${HEADS[i]}</h3><p style="white-space:pre-wrap">${esc(S.parts[i].text)}</p>`).join('')}
 home();
 </script></body></html>
