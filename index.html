@@ -43,6 +43,8 @@ const wc=t=>(t.trim().match(/\S+/g)||[]).length,setMsg=t=>$('#msg').textContent=
 /* ---- near-live typing via Apps Script cache (no extra services) ---- */
 const LIVE={};let lsT=0,lastL='',subSid='',skew=0;
 const txt=i=>LIVE[i]?LIVE[i].text:S.parts[i].text;
+const tot=()=>[0,1,2,3].reduce((a,i)=>a+wc(role==='student'&&i===me&&$('#ta')?$('#ta').value:txt(i)),0);
+function twUpdate(){const e=$('#tw');if(e&&S&&S.sid)e.textContent='Total '+tot()+' / ~'+TARGET.reduce((a,b)=>a+b)+' words'}
 function liveSend(){if(lsT)return;lsT=setTimeout(()=>{lsT=0;const ta=$('#ta');if(ta)post({action:'live',sid:S.sid,i:me,text:ta.value})},700)}
 async function livePoll(){if(!role||!S||!S.sid||document.hidden)return;try{const r=await(await fetch(URL_+'?action=live&sid='+S.sid)).json(),j=JSON.stringify(r.p);skew=r.now-Date.now();if(j!==lastL){lastL=j;for(const k in r.p)LIVE[k]=r.p[k];render()}}catch(e){}}
 (function lp(){livePoll().finally(()=>setTimeout(lp,role==='teacher'?1500:2500))})();
@@ -69,17 +71,17 @@ function renderS(){
  <div class="row" style="margin-bottom:8px">${STARTS[me].map(s=>`<button class="alt st">${s}</button>`).join('')}</div>
  <textarea id="ta" placeholder="Write your ${HEADS[me]} here…">${esc(txt(me))}</textarea>
  <div class="row" style="margin-top:8px"><span class="mono" id="wc"></span><div class="bar grow"><i id="br"></i></div><button class="alt" id="hp"></button><button class="gold" id="rd">Ready for review</button></div></div>
- <div id="mine"></div><h3>The whole report so far</h3><div id="others"></div>`;
+ <div id="mine"></div><h3>The whole report so far <span class="chip" id="tw"></span></h3><div id="others"></div>`;
  const ta=$('#ta');ta.oninput=()=>{upW();queue('Writing');liveSend()};ta.onblur=()=>flush();
  document.querySelectorAll('.st').forEach(b=>b.onclick=()=>{ta.value+=(ta.value&&!/\s$/.test(ta.value)?' ':'')+b.textContent.replace('…','');ta.focus();upW();queue('Writing');liveSend()});
  $('#hp').onclick=()=>{const h=!S.parts[me].help;S.parts[me].help=h;queue(null,h)};
  $('#rd').onclick=()=>{flush('Ready')};upW()}
  const stt=$('#stt');stt.textContent=p.status;stt.className='chip '+p.status;const tt=$('#ttl');tt.classList.toggle('hide',!S.title);tt.innerHTML='<span class="mono">Report title</span><h2>'+esc(S.title)+'</h2>';
- $('#hp').textContent=p.help?'Cancel help request':'I need help';
+ twUpdate();$('#hp').textContent=p.help?'Cancel help request':'I need help';
  $('#mine').innerHTML=S.comments.filter(c=>c.part===PARTS[me]).reverse().map(c=>`<div class="cm ${c.done?'done':''}"><b>${esc(c.tag)}</b> · ${esc(c.text)} ${c.done?'':`<button class="alt" style="padding:2px 10px" data-d="${c.id}">Done</button>`}</div>`).join('')||'<p class="mono">Teacher comments for your part appear here.</p>';
  document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>post({action:'done',id:b.dataset.d}));
  $('#others').innerHTML=PARTS.map((n,i)=>i===me?'':`<div class="card"><b>${HEADS[i]}</b> <span class="mono">${esc(S.parts[i].student)} · ${wc(txt(i))} words</span><div class="txt">${esc(txt(i))||'<span class="mono">Not started</span>'}</div></div>`).join('')}
-function upW(){const n=wc($('#ta').value),t=TARGET[me];$('#wc').textContent=n+' / ~'+t+' words';const b=$('#br');b.style.width=Math.min(100,n/t*100)+'%';b.className=n>=t?'full':''}
+function upW(){twUpdate();const n=wc($('#ta').value),t=TARGET[me];$('#wc').textContent=n+' / ~'+t+' words';const b=$('#br');b.style.width=Math.min(100,n/t*100)+'%';b.className=n>=t?'full':''}
 function queue(status,help){clearTimeout(saveT);setMsg('Typing…');saveT=setTimeout(()=>flush(status,help),1600)}
 async function flush(status){clearTimeout(saveT);if(!S||me<0)return;const p=S.parts[me],ta=$('#ta');if(!ta)return;
  const st=status||(p.status==='Ready'&&ta.value===p.text?'Ready':ta.value?'Writing':'Not started');
@@ -90,7 +92,7 @@ function renderT(){
   $('#app').innerHTML=`<div class="card"><div class="row"><h3 class="grow">${S.sid?'Live board':'Start a session'}</h3><button class="alt" id="nw">New task</button>${S.sid?'<button class="alt" id="stb">Stitch report</button>':''}</div>
   <div id="nf" class="${S.sid?'hide':''}"><textarea id="tt" style="min-height:90px" placeholder="Paste the report task…"></textarea>
   <div class="row" style="margin-top:8px">${PARTS.map((p,i)=>`<input class="nm grow" placeholder="${HEADS[i]} — student name" style="min-width:150px">`).join('')}</div><button class="gold" style="margin-top:8px" id="sv">Start session</button></div>
-  ${S.sid?`<div class="task card" style="margin:10px 0 0"><b>Task</b><br>${esc(S.task)}</div><label class="mono" for="ti">Report title (students see it live)</label><input id="ti" placeholder="Type the title during the session…" style="font-size:22px;margin-top:4px">`:''}</div>
+  ${S.sid?`<div class="task card" style="margin:10px 0 0"><b>Task</b><br>${esc(S.task)}</div><label class="mono" for="ti">Report title (students see it live)</label><input id="ti" placeholder="Type the title during the session…" style="font-size:22px;margin-top:4px"><div class="chip" id="tw" style="margin-top:8px;font-size:14px"></div>`:''}</div>
   <div class="card hide" id="stitch"><div class="row"><h3 class="grow">Stitched report</h3><button class="alt" onclick="print()">Print / save PDF</button></div><div id="stb2"></div></div>
   <div class="grid">${S.sid?PARTS.map((p,i)=>`<div class="card"><div class="row"><h3 class="grow">${HEADS[i]}</h3><span class="chip" id="st${i}"></span><span class="chip help hide" id="hp${i}">needs help</span></div>
   <div class="mono" id="mt${i}"></div><div class="txt" id="tx${i}"></div><div id="cm${i}"></div>
@@ -103,6 +105,7 @@ function renderT(){
     $('#rt'+i).onclick=()=>post({action:'returnPart',key,sid:S.sid,part:p})})}}
  if(!S.sid)return;
  if(document.activeElement!==$('#ti'))$('#ti').value=S.title||'';
+ twUpdate();
  PARTS.forEach((p,i)=>{const d=S.parts[i],lt=LIVE[i]?LIVE[i].t:0,ago=Math.max(0,Math.round((Date.now()+skew-Math.max(lt,new Date(d.updated)))/1000)),typing=Date.now()+skew-lt<4000,idle=ago>120&&d.status!=='Ready';
   const st=$('#st'+i);st.textContent=idle?'idle':d.status;st.className='chip '+(idle?'idle':d.status);
   $('#hp'+i).classList.toggle('hide',!d.help);
