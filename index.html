@@ -40,10 +40,16 @@ const STARTS=[['This report aims to…','The purpose of this report is to…'],[
 let tT,role='',key='',me=-1,S=null,ver=-1,saveT,built='';
 const $=s=>document.querySelector(s),esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const wc=t=>(t.trim().match(/\S+/g)||[]).length,setMsg=t=>$('#msg').textContent=t;
+/* ---- near-live typing via Apps Script cache (no extra services) ---- */
+const LIVE={};let lsT=0,lastL='',subSid='',skew=0;
+const txt=i=>LIVE[i]?LIVE[i].text:S.parts[i].text;
+function liveSend(){if(lsT)return;lsT=setTimeout(()=>{lsT=0;const ta=$('#ta');if(ta)post({action:'live',sid:S.sid,i:me,text:ta.value})},700)}
+async function livePoll(){if(!role||!S||!S.sid||document.hidden)return;try{const r=await(await fetch(URL_+'?action=live&sid='+S.sid)).json(),j=JSON.stringify(r.p);skew=r.now-Date.now();if(j!==lastL){lastL=j;for(const k in r.p)LIVE[k]=r.p[k];render()}}catch(e){}}
+(function lp(){livePoll().finally(()=>setTimeout(lp,role==='teacher'?1500:2500))})();
 async function post(b){const r=await fetch(URL_,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(b)});return r.json()}
-async function load(){S=await(await fetch(URL_+'?action=state')).json();ver=S.v;render();setMsg('Live · '+new Date().toLocaleTimeString())}
+async function load(){S=await(await fetch(URL_+'?action=state')).json();ver=S.v;if(S.sid!==subSid){subSid=S.sid;for(const k in LIVE)delete LIVE[k];lastL=''}render();setMsg('Live · '+new Date().toLocaleTimeString())}
 async function poll(){if(!role)return;try{const v=await(await fetch(URL_+'?action=version')).json();if(v.v!==ver)await load();else setMsg('Live · '+new Date().toLocaleTimeString())}catch(e){setMsg('Reconnecting…')}}
-setInterval(poll,3500);
+setInterval(poll,3500);setInterval(()=>{if(role==='teacher'&&S&&S.sid)render()},1500);
 function home(){$('#app').innerHTML=`<div class="card" style="max-width:520px;margin:30px auto"><h2>Join the session</h2><p class="mono">Choose how you are joining.</p>
 <div class="row"><button class="gold grow" id="bs">I am a student</button><button class="alt grow" id="bt">I am the teacher</button></div>
 <div id="tk" class="hide" style="margin-top:12px"><input id="key" type="password" placeholder="Teacher key"><button style="margin-top:8px" id="go">Open teacher board</button><p id="er" class="mono"></p></div></div>`;
@@ -61,18 +67,18 @@ function renderS(){
  <div class="card"><div class="row"><h2 class="grow">${HEADS[me]} <span class="mono">${esc(p.student)}</span></h2><span id="stt" class="chip"></span></div>
  <ul class="ck">${GUIDE[me].map(g=>`<li>${g}</li>`).join('')}</ul>
  <div class="row" style="margin-bottom:8px">${STARTS[me].map(s=>`<button class="alt st">${s}</button>`).join('')}</div>
- <textarea id="ta" placeholder="Write your ${HEADS[me]} here…">${esc(p.text)}</textarea>
+ <textarea id="ta" placeholder="Write your ${HEADS[me]} here…">${esc(txt(me))}</textarea>
  <div class="row" style="margin-top:8px"><span class="mono" id="wc"></span><div class="bar grow"><i id="br"></i></div><button class="alt" id="hp"></button><button class="gold" id="rd">Ready for review</button></div></div>
  <div id="mine"></div><h3>The whole report so far</h3><div id="others"></div>`;
- const ta=$('#ta');ta.oninput=()=>{upW();queue('Writing')};ta.onblur=()=>flush();
- document.querySelectorAll('.st').forEach(b=>b.onclick=()=>{ta.value+=(ta.value&&!/\s$/.test(ta.value)?' ':'')+b.textContent.replace('…','');ta.focus();upW();queue('Writing')});
+ const ta=$('#ta');ta.oninput=()=>{upW();queue('Writing');liveSend()};ta.onblur=()=>flush();
+ document.querySelectorAll('.st').forEach(b=>b.onclick=()=>{ta.value+=(ta.value&&!/\s$/.test(ta.value)?' ':'')+b.textContent.replace('…','');ta.focus();upW();queue('Writing');liveSend()});
  $('#hp').onclick=()=>{const h=!S.parts[me].help;S.parts[me].help=h;queue(null,h)};
  $('#rd').onclick=()=>{flush('Ready')};upW()}
  const stt=$('#stt');stt.textContent=p.status;stt.className='chip '+p.status;const tt=$('#ttl');tt.classList.toggle('hide',!S.title);tt.innerHTML='<span class="mono">Report title</span><h2>'+esc(S.title)+'</h2>';
  $('#hp').textContent=p.help?'Cancel help request':'I need help';
  $('#mine').innerHTML=S.comments.filter(c=>c.part===PARTS[me]).reverse().map(c=>`<div class="cm ${c.done?'done':''}"><b>${esc(c.tag)}</b> · ${esc(c.text)} ${c.done?'':`<button class="alt" style="padding:2px 10px" data-d="${c.id}">Done</button>`}</div>`).join('')||'<p class="mono">Teacher comments for your part appear here.</p>';
  document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>post({action:'done',id:b.dataset.d}));
- $('#others').innerHTML=PARTS.map((n,i)=>i===me?'':`<div class="card"><b>${HEADS[i]}</b> <span class="mono">${esc(S.parts[i].student)} · ${S.parts[i].words} words</span><div class="txt">${esc(S.parts[i].text)||'<span class="mono">Not started</span>'}</div></div>`).join('')}
+ $('#others').innerHTML=PARTS.map((n,i)=>i===me?'':`<div class="card"><b>${HEADS[i]}</b> <span class="mono">${esc(S.parts[i].student)} · ${wc(txt(i))} words</span><div class="txt">${esc(txt(i))||'<span class="mono">Not started</span>'}</div></div>`).join('')}
 function upW(){const n=wc($('#ta').value),t=TARGET[me];$('#wc').textContent=n+' / ~'+t+' words';const b=$('#br');b.style.width=Math.min(100,n/t*100)+'%';b.className=n>=t?'full':''}
 function queue(status,help){clearTimeout(saveT);setMsg('Typing…');saveT=setTimeout(()=>flush(status,help),1600)}
 async function flush(status){clearTimeout(saveT);if(!S||me<0)return;const p=S.parts[me],ta=$('#ta');if(!ta)return;
@@ -97,12 +103,12 @@ function renderT(){
     $('#rt'+i).onclick=()=>post({action:'returnPart',key,sid:S.sid,part:p})})}}
  if(!S.sid)return;
  if(document.activeElement!==$('#ti'))$('#ti').value=S.title||'';
- PARTS.forEach((p,i)=>{const d=S.parts[i],ago=Math.round((Date.now()-new Date(d.updated))/1000),idle=ago>120&&d.status!=='Ready';
+ PARTS.forEach((p,i)=>{const d=S.parts[i],lt=LIVE[i]?LIVE[i].t:0,ago=Math.max(0,Math.round((Date.now()+skew-Math.max(lt,new Date(d.updated)))/1000)),typing=Date.now()+skew-lt<4000,idle=ago>120&&d.status!=='Ready';
   const st=$('#st'+i);st.textContent=idle?'idle':d.status;st.className='chip '+(idle?'idle':d.status);
   $('#hp'+i).classList.toggle('hide',!d.help);
-  $('#mt'+i).textContent=`${d.student||'—'} · ${d.words}/~${TARGET[i]} words · active ${ago<60?ago+'s':Math.round(ago/60)+'m'} ago`;
-  $('#tx'+i).textContent=d.text||'Not started';
+  $('#mt'+i).textContent=`${d.student||'—'} · ${wc(txt(i))}/~${TARGET[i]} words · active ${ago<60?ago+'s':Math.round(ago/60)+'m'} ago${typing?' · ✍ typing…':''}`;
+  $('#tx'+i).textContent=txt(i)||'Not started';
   $('#cm'+i).innerHTML=S.comments.filter(c=>c.part===p).reverse().map(c=>`<div class="cm ${c.done?'done':''}"><b>${esc(c.tag)}</b> · ${esc(c.text)} ${c.done?'<span class="mono">✓ done</span>':''}</div>`).join('')});
- $('#stb2').innerHTML=(S.title?'<h2>'+esc(S.title)+'</h2>':'')+PARTS.map((p,i)=>`<h3>${HEADS[i]}</h3><p style="white-space:pre-wrap">${esc(S.parts[i].text)}</p>`).join('')}
+ $('#stb2').innerHTML=(S.title?'<h2>'+esc(S.title)+'</h2>':'')+PARTS.map((p,i)=>`<h3>${HEADS[i]}</h3><p style="white-space:pre-wrap">${esc(txt(i))}</p>`).join('')}
 home();
 </script></body></html>
