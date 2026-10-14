@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Report Writing Room · AIS English</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#14213d;--gold:#c8a24a;--cream:#f8f3e6;--card:#fffdf7;--line:#e4dcc6;--ink:#1d2433;--mute:#6b7285;--ok:#2e7d5b;--warn:#b7791f;--bad:#b23a48}
+*{box-sizing:border-box}body{margin:0;background:var(--cream);color:var(--ink);font:15px/1.55 Inter,sans-serif}
+header{background:var(--navy);color:#fff;padding:14px 22px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--gold)}
+header h1{font:400 26px 'Instrument Serif',serif;margin:0}header small{color:#d9cfae}
+main{max-width:1280px;margin:0 auto;padding:18px}
+h2,h3{font-family:'Instrument Serif',serif;font-weight:400;margin:0 0 6px;color:var(--navy)}h2{font-size:26px}h3{font-size:21px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:14px}
+.task{border-left:4px solid var(--gold)}
+button,select,input,textarea{font:inherit}
+button{background:var(--navy);color:#fff;border:0;border-radius:7px;padding:8px 14px;cursor:pointer}button.alt{background:#fff;color:var(--navy);border:1px solid var(--navy)}button.gold{background:var(--gold);color:var(--navy);font-weight:600}
+button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold)}
+input,select,textarea{border:1px solid var(--line);border-radius:7px;padding:8px;background:#fff;width:100%}
+textarea{min-height:230px;resize:vertical;font-size:16px;line-height:1.7}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.grow{flex:1}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:14px}
+.chip{font:12px 'JetBrains Mono',monospace;padding:2px 8px;border-radius:99px;background:#ece5cf}
+.Writing{background:#dbe8f7}.Ready{background:#d4eadf}.Returned{background:#f4dede}.idle{background:#f6e6c4}.help{background:var(--bad);color:#fff}
+.mono{font:12px 'JetBrains Mono',monospace;color:var(--mute)}
+.txt{white-space:pre-wrap;background:#fff;border:1px solid var(--line);border-radius:7px;padding:10px;min-height:110px;max-height:300px;overflow:auto}
+.cm{border-left:3px solid var(--gold);background:#fbf6e6;padding:6px 10px;margin:6px 0;border-radius:0 7px 7px 0}.cm.done{opacity:.55;border-color:var(--ok)}
+.cm b{color:var(--navy)}ul.ck{margin:4px 0 8px;padding-left:20px;color:var(--mute)}
+.bar{height:6px;background:#ece5cf;border-radius:9px;overflow:hidden}.bar i{display:block;height:100%;background:var(--gold)}.bar i.full{background:var(--ok)}
+.hide{display:none}#stitch h3{margin-top:12px}
+@media(max-width:700px){main{padding:10px}}
+@media print{body *{visibility:hidden}#stitch,#stitch *{visibility:visible}#stitch{position:absolute;left:0;top:0;width:100%;border:0}}
+</style></head><body>
+<header><div><h1>Report Writing Room</h1><small>IGCSE English 0510 · Exercise 6 · Al-Rowad International Schools</small></div><small id="msg">Connecting…</small></header>
+<main id="app"></main>
+<script>
+const URL_='https://script.google.com/macros/s/AKfycbzHkPjGlX8dp5sEEPNtoePLPjYywEVERxvp0gw1CMHR4Hn_ItIhDZe3aCFXsb5HaY6H7A/exec'; // Apps Script /exec URL
+const PARTS=['Introduction','Body 1','Body 2','Conclusion'],TARGET=[40,60,60,40];
+const GUIDE=[['Say who the report is for and why you are writing','Open formally','Preview what the report covers'],['One clear focus with a heading','Facts, examples and reasons','Accurate, formal language'],['A new focus that links to Body 1','Facts, examples and reasons','Use linking words'],['Sum up the main findings','Give a clear recommendation','End formally']];
+const STARTS=[['This report aims to…','The purpose of this report is to…'],['Firstly, …','It was found that…'],['Furthermore, …','Another issue is…'],['In conclusion, …','It is recommended that…']];
+let role='',key='',me=-1,S=null,ver=-1,saveT,built='';
+const $=s=>document.querySelector(s),esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const wc=t=>(t.trim().match(/\S+/g)||[]).length,setMsg=t=>$('#msg').textContent=t;
+async function post(b){const r=await fetch(URL_,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(b)});return r.json()}
+async function load(){S=await(await fetch(URL_+'?action=state')).json();ver=S.v;render();setMsg('Live · '+new Date().toLocaleTimeString())}
+async function poll(){if(!role)return;try{const v=await(await fetch(URL_+'?action=version')).json();if(v.v!==ver)await load();else setMsg('Live · '+new Date().toLocaleTimeString())}catch(e){setMsg('Reconnecting…')}}
+setInterval(poll,3500);
+function home(){$('#app').innerHTML=`<div class="card" style="max-width:520px;margin:30px auto"><h2>Join the session</h2><p class="mono">Choose how you are joining.</p>
+<div class="row"><button class="gold grow" id="bs">I am a student</button><button class="alt grow" id="bt">I am the teacher</button></div>
+<div id="tk" class="hide" style="margin-top:12px"><input id="key" type="password" placeholder="Teacher key"><button style="margin-top:8px" id="go">Open teacher board</button><p id="er" class="mono"></p></div></div>`;
+$('#bs').onclick=()=>{role='student';load()};
+$('#bt').onclick=()=>$('#tk').classList.toggle('hide');
+$('#go').onclick=async()=>{const k=$('#key').value,r=await post({action:'checkKey',key:k});if(r.ok){key=k;role='teacher';load()}else $('#er').textContent=r.error||'Could not connect'}}
+function render(){role==='teacher'?renderT():renderS()}
+/* ---------- STUDENT ---------- */
+function renderS(){
+ if(!S.sid){$('#app').innerHTML='<div class="card"><h2>No task yet</h2><p>Your teacher has not started a session. This page updates by itself.</p></div>';built='';return}
+ if(me<0){$('#app').innerHTML=`<div class="card" style="max-width:520px;margin:30px auto"><h2>Who are you?</h2><div class="task card"><b>Task</b><br>${esc(S.task)}</div>${S.names.map((n,i)=>`<button class="alt" style="display:block;width:100%;margin:6px 0" data-i="${i}">${esc(n||'Student '+(i+1))} — writes the ${PARTS[i]}</button>`).join('')}</div>`;
+  document.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{me=+b.dataset.i;built='';render()});return}
+ const id=S.sid+me,p=S.parts[me];
+ if(built!==id){built=id;$('#app').innerHTML=`<div class="card task"><b>Task</b><br>${esc(S.task)}</div>
+ <div class="card"><div class="row"><h2 class="grow">${PARTS[me]} <span class="mono">${esc(p.student)}</span></h2><span id="stt" class="chip"></span></div>
+ <ul class="ck">${GUIDE[me].map(g=>`<li>${g}</li>`).join('')}</ul>
+ <div class="row" style="margin-bottom:8px">${STARTS[me].map(s=>`<button class="alt st">${s}</button>`).join('')}</div>
+ <textarea id="ta" placeholder="Write your ${PARTS[me]} here…">${esc(p.text)}</textarea>
+ <div class="row" style="margin-top:8px"><span class="mono" id="wc"></span><div class="bar grow"><i id="br"></i></div><button class="alt" id="hp"></button><button class="gold" id="rd">Ready for review</button></div></div>
+ <div id="mine"></div><h3>The whole report so far</h3><div id="others"></div>`;
+ const ta=$('#ta');ta.oninput=()=>{upW();queue('Writing')};ta.onblur=()=>flush();
+ document.querySelectorAll('.st').forEach(b=>b.onclick=()=>{ta.value+=(ta.value&&!/\s$/.test(ta.value)?' ':'')+b.textContent.replace('…','');ta.focus();upW();queue('Writing')});
+ $('#hp').onclick=()=>{const h=!S.parts[me].help;S.parts[me].help=h;queue(null,h)};
+ $('#rd').onclick=()=>{flush('Ready')};upW()}
+ const stt=$('#stt');stt.textContent=p.status;stt.className='chip '+p.status;
+ $('#hp').textContent=p.help?'Cancel help request':'I need help';
+ $('#mine').innerHTML=S.comments.filter(c=>c.part===PARTS[me]).reverse().map(c=>`<div class="cm ${c.done?'done':''}"><b>${esc(c.tag)}</b> · ${esc(c.text)} ${c.done?'':`<button class="alt" style="padding:2px 10px" data-d="${c.id}">Done</button>`}</div>`).join('')||'<p class="mono">Teacher comments for your part appear here.</p>';
+ document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>post({action:'done',id:b.dataset.d}));
+ $('#others').innerHTML=PARTS.map((n,i)=>i===me?'':`<div class="card"><b>${n}</b> <span class="mono">${esc(S.parts[i].student)} · ${S.parts[i].words} words</span><div class="txt">${esc(S.parts[i].text)||'<span class="mono">Not started</span>'}</div></div>`).join('')}
+function upW(){const n=wc($('#ta').value),t=TARGET[me];$('#wc').textContent=n+' / ~'+t+' words';const b=$('#br');b.style.width=Math.min(100,n/t*100)+'%';b.className=n>=t?'full':''}
+function queue(status,help){clearTimeout(saveT);setMsg('Typing…');saveT=setTimeout(()=>flush(status,help),1600)}
+async function flush(status){clearTimeout(saveT);if(!S||me<0)return;const p=S.parts[me],ta=$('#ta');if(!ta)return;
+ const st=status||(p.status==='Ready'&&ta.value===p.text?'Ready':ta.value?'Writing':'Not started');
+ const r=await post({action:'save',sid:S.sid,part:PARTS[me],student:p.student,text:ta.value,status:st,help:p.help});setMsg(r.ok?'Saved · '+new Date().toLocaleTimeString():'Not saved — check connection')}
+/* ---------- TEACHER ---------- */
+function renderT(){
+ if(built!==(S.sid||'none')){built=S.sid||'none';
+  $('#app').innerHTML=`<div class="card"><div class="row"><h3 class="grow">${S.sid?'Live board':'Start a session'}</h3><button class="alt" id="nw">New task</button>${S.sid?'<button class="alt" id="stb">Stitch report</button>':''}</div>
+  <div id="nf" class="${S.sid?'hide':''}"><textarea id="tt" style="min-height:90px" placeholder="Paste the report task…"></textarea>
+  <div class="row" style="margin-top:8px">${PARTS.map((p,i)=>`<input class="nm grow" placeholder="${p} — student name" style="min-width:150px">`).join('')}</div><button class="gold" style="margin-top:8px" id="sv">Start session</button></div>
+  ${S.sid?`<div class="task card" style="margin:10px 0 0"><b>Task</b><br>${esc(S.task)}</div>`:''}</div>
+  <div class="card hide" id="stitch"><div class="row"><h3 class="grow">Stitched report</h3><button class="alt" onclick="print()">Print / save PDF</button></div><div id="stb2"></div></div>
+  <div class="grid">${S.sid?PARTS.map((p,i)=>`<div class="card"><div class="row"><h3 class="grow">${p}</h3><span class="chip" id="st${i}"></span><span class="chip help hide" id="hp${i}">needs help</span></div>
+  <div class="mono" id="mt${i}"></div><div class="txt" id="tx${i}"></div><div id="cm${i}"></div>
+  <div class="row" style="margin-top:8px"><select id="tg${i}" style="width:auto"><option>Praise</option><option>Fix</option><option>Think about this</option><option>Language</option></select><input id="ci${i}" class="grow" placeholder="Comment for ${esc(S.parts[i].student||p)}"><button id="cs${i}">Send</button></div>
+  <button class="alt" style="margin-top:8px" id="rt${i}">Return for revision</button></div>`).join(''):''}</div>`;
+  $('#nw').onclick=()=>$('#nf').classList.toggle('hide');
+  $('#sv').onclick=async()=>{const task=$('#tt').value.trim();if(!task)return;await post({action:'newSession',key,task,names:[...document.querySelectorAll('.nm')].map(x=>x.value.trim())});built='';load()};
+  if(S.sid){$('#stb').onclick=()=>$('#stitch').classList.toggle('hide');
+   PARTS.forEach((p,i)=>{$('#cs'+i).onclick=async()=>{const t=$('#ci'+i).value.trim();if(!t)return;$('#ci'+i).value='';await post({action:'comment',key,sid:S.sid,part:p,tag:$('#tg'+i).value,text:t})};
+    $('#rt'+i).onclick=()=>post({action:'returnPart',key,sid:S.sid,part:p})})}}
+ if(!S.sid)return;
+ PARTS.forEach((p,i)=>{const d=S.parts[i],ago=Math.round((Date.now()-new Date(d.updated))/1000),idle=ago>120&&d.status!=='Ready';
+  const st=$('#st'+i);st.textContent=idle?'idle':d.status;st.className='chip '+(idle?'idle':d.status);
+  $('#hp'+i).classList.toggle('hide',!d.help);
+  $('#mt'+i).textContent=`${d.student||'—'} · ${d.words}/~${TARGET[i]} words · active ${ago<60?ago+'s':Math.round(ago/60)+'m'} ago`;
+  $('#tx'+i).textContent=d.text||'Not started';
+  $('#cm'+i).innerHTML=S.comments.filter(c=>c.part===p).reverse().map(c=>`<div class="cm ${c.done?'done':''}"><b>${esc(c.tag)}</b> · ${esc(c.text)} ${c.done?'<span class="mono">✓ done</span>':''}</div>`).join('')});
+ $('#stb2').innerHTML=PARTS.map((p,i)=>`<h3>${p}</h3><p style="white-space:pre-wrap">${esc(S.parts[i].text)}</p>`).join('')}
+home();
+</script></body></html>
