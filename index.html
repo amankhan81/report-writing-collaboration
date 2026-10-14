@@ -28,7 +28,18 @@ textarea{min-height:230px;resize:vertical;font-size:16px;line-height:1.7}
 .bar{height:6px;background:#ece5cf;border-radius:9px;overflow:hidden}.bar i{display:block;height:100%;background:var(--gold)}.bar i.full{background:var(--ok)}
 .hide{display:none}#stitch h3{margin-top:12px}
 @media(max-width:700px){main{padding:10px}}
-@media print{body *{visibility:hidden}#stitch,#stitch *{visibility:visible}#stitch{position:absolute;left:0;top:0;width:100%;border:0}}
+
+.sheet{background:#fff;border:1px solid var(--line);max-width:794px;margin:12px auto;font-size:12.5px;color:var(--ink);break-inside:avoid}
+.sh-top{background:var(--navy);color:#fff;padding:20px 28px 16px;border-bottom:5px solid var(--gold);display:flex;justify-content:space-between;align-items:flex-end;gap:16px}
+.sh-top h1{font:400 38px/1.05 'Instrument Serif',serif;margin:4px 0 0}.sh-top small{color:#e6dcb8;font-size:11px;line-height:1.5}
+.sh-meta{display:grid;grid-template-columns:1fr 1fr;gap:9px 24px;padding:13px 28px;background:#fbf6e6;border-bottom:1px solid var(--line)}
+.sh-meta .full{grid-column:1/-1;white-space:pre-line}.sh-meta span{display:block;font:11px 'JetBrains Mono',monospace;color:var(--mute);margin-bottom:1px}
+.sh-body{padding:16px 28px 6px}.sh-title{font:400 29px/1.15 'Instrument Serif',serif;color:var(--navy);text-align:center;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid var(--gold)}
+.sh-sec{margin-bottom:11px;padding-left:12px;border-left:3px solid var(--gold)}.sh-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px}
+.sh-h b{font:400 19px 'Instrument Serif',serif;color:var(--navy)}.sh-h i{font:11px 'JetBrains Mono',monospace;color:var(--mute);font-style:normal}
+.sh-sec p{margin:0;white-space:pre-wrap;line-height:1.62;text-align:justify}.sh-foot{padding:9px 28px;border-top:1px solid var(--line);font:10.5px 'JetBrains Mono',monospace;color:var(--mute);text-align:center}
+@page{size:A4;margin:9mm}
+@media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{background:#fff}header,.noprint{display:none!important}#app>*:not(#stitch){display:none!important}main{padding:0;max-width:none}#stitch{border:0;padding:0;margin:0;background:#fff}.sheet{border:0;margin:0;max-width:none}}
 </style></head><body>
 <header><div><h1>Report Writing Room</h1><small>IGCSE English 0510 · Exercise 6 · Al-Rowad International Schools</small></div><small id="msg">Connecting…</small></header>
 <main id="app"></main>
@@ -89,14 +100,14 @@ async function flush(status){clearTimeout(saveT);if(!S||me<0)return;const p=S.pa
 /* ---------- TEACHER ---------- */
 function renderT(){
  if(built!==(S.sid||'none')){built=S.sid||'none';
-  $('#app').innerHTML=`<div class="card"><div class="row"><h3 class="grow">${S.sid?'Live board':'Start a session'}</h3><button class="alt" id="nw">New task</button>${S.sid?'<button class="alt" id="stb">Stitch report</button>':''}</div>
+  $('#app').innerHTML=`<div class="card"><div class="row"><h3 class="grow">${S.sid?'Live board':'Start a session'}</h3><button class="alt" id="nw">New task</button>${S.sid?'<button class="alt" id="stb">Group Work</button>':''}</div>
   <div id="nf" class="${S.sid?'hide':''}"><textarea id="tt" style="min-height:90px" placeholder="Paste the report task…"></textarea>
   <div class="row" style="margin-top:8px">${PARTS.map((p,i)=>`<input class="nm grow" placeholder="${HEADS[i]} — student name" style="min-width:150px">`).join('')}</div><button class="gold" style="margin-top:8px" id="sv">Start session</button></div>
   ${S.sid?`<div class="task card" style="margin:10px 0 0"><b>Task</b><br>${esc(S.task)}</div><label class="mono" for="ti">Report title (students see it live)</label><input id="ti" placeholder="Type the title during the session…" style="font-size:22px;margin-top:4px"><div class="chip" id="tw" style="margin-top:8px;font-size:14px"></div>`:''}</div>
-  <div class="card hide" id="stitch"><div class="row"><h3 class="grow">Stitched report</h3><button class="alt" onclick="print()">Print / save PDF</button><button class="alt" onclick="document.getElementById('stitch').classList.add('hide')">Close</button></div><div id="stb2"></div></div>
+  <div class="card hide" id="stitch"><div class="row noprint"><h3 class="grow">Group Work</h3><button class="alt" onclick="print()">Print / save PDF</button><button class="alt" onclick="document.getElementById('stitch').classList.add('hide')">Close</button></div><div id="stb2"></div></div>
   <div class="grid">${S.sid?PARTS.map((p,i)=>`<div class="card"><div class="row"><h3 class="grow">${HEADS[i]}</h3><span class="chip" id="st${i}"></span><span class="chip help hide" id="hp${i}">needs help</span></div>
   <div class="mono" id="mt${i}"></div><div class="txt" id="tx${i}"></div><div id="cm${i}"></div>
-  <div class="row" style="margin-top:8px"><select id="tg${i}" style="width:auto"><option>Praise</option><option>Fix</option><option>Think about this</option><option>Language</option></select><input id="ci${i}" class="grow" placeholder="Comment for ${esc(S.parts[i].student||HEADS[i])}"><button id="cs${i}">Send</button></div>
+  <textarea id="ci${i}" rows="3" style="min-height:80px;margin-top:8px" placeholder="Comment for ${esc(S.parts[i].student||HEADS[i])}"></textarea><div class="row" style="margin-top:6px"><select id="tg${i}" style="width:auto"><option>Praise</option><option>Fix</option><option>Think about this</option><option>Language</option></select><span class="grow"></span><button id="cs${i}">Send</button></div>
   <button class="alt" style="margin-top:8px" id="rt${i}">Return for revision</button></div>`).join(''):''}</div>`;
   $('#nw').onclick=()=>$('#nf').classList.toggle('hide');
   $('#sv').onclick=async()=>{const task=$('#tt').value.trim();if(!task)return;await post({action:'newSession',key,task,names:[...document.querySelectorAll('.nm')].map(x=>x.value.trim())});built='';load()};
@@ -112,6 +123,9 @@ function renderT(){
   $('#mt'+i).textContent=`${d.student||'—'} · ${wc(txt(i))}/~${TARGET[i]} words · active ${ago<60?ago+'s':Math.round(ago/60)+'m'} ago${typing?' · ✍ typing…':''}`;
   $('#tx'+i).textContent=txt(i)||'Not started';
   $('#cm'+i).innerHTML=S.comments.filter(c=>c.part===p).reverse().map(c=>`<div class="cm ${c.done?'done':''}"><b>${esc(c.tag)}</b> · ${esc(c.text)} ${c.done?'<span class="mono">✓ done</span>':''}</div>`).join('')});
- $('#stb2').innerHTML=(S.title?'<h2>'+esc(S.title)+'</h2>':'')+PARTS.map((p,i)=>`<h3>${HEADS[i]}</h3><p style="white-space:pre-wrap">${esc(txt(i))}</p>`).join('')}
+ $('#stb2').innerHTML=`<div class="sheet"><div class="sh-top"><div><small>Al-Rowad International Schools · English Department</small><h1>Group Work</h1></div><small style="text-align:right">IGCSE English 0510<br>Exercise 6 · Report Writing</small></div>
+<div class="sh-meta"><div><span>Date</span>${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</div><div><span>Word count</span>${tot()} words (limit ${MAX})</div><div class="full"><span>Task</span>${esc(S.task)}</div><div class="full"><span>Group members</span>${S.parts.map(p=>esc(p.student||'—')).join('  ·  ')}</div></div>
+<div class="sh-body"><div class="sh-title">${esc(S.title)||'Untitled report'}</div>${PARTS.map((p,i)=>`<div class="sh-sec"><div class="sh-h"><b>${HEADS[i]}</b><i>${esc(S.parts[i].student)}</i></div><p>${esc(txt(i))||'<em>Not written</em>'}</p></div>`).join('')}</div>
+<div class="sh-foot">Written collaboratively by the group · Designed by Amanullah Khan</div></div>`}
 home();
 </script></body></html>
