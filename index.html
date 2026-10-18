@@ -16,13 +16,13 @@ button,select,input,textarea{font:inherit}
 button{background:var(--navy);color:#fff;border:0;border-radius:7px;padding:8px 14px;cursor:pointer}button.alt{background:#fff;color:var(--navy);border:1px solid var(--navy)}button.gold{background:var(--gold);color:var(--navy);font-weight:600}
 button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold)}
 input,select,textarea{border:1px solid var(--line);border-radius:7px;padding:8px;background:#fff;width:100%}
-textarea{min-height:230px;resize:vertical;font-size:16px;line-height:1.7}
+#ta{overflow:hidden;resize:none}textarea{min-height:230px;resize:vertical;font-size:16px;line-height:1.7}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.grow{flex:1}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:14px}
 .chip{font:12px 'JetBrains Mono',monospace;padding:2px 8px;border-radius:99px;background:#ece5cf}
 .Writing{background:#dbe8f7}.Ready{background:#d4eadf}.Returned{background:#f4dede}.idle{background:#f6e6c4}.help{background:var(--bad);color:#fff}
 .mono{font:12px 'JetBrains Mono',monospace;color:var(--mute)}
-.txt{white-space:pre-wrap;background:#fff;border:1px solid var(--line);border-radius:7px;padding:10px;min-height:110px;max-height:300px;overflow:auto}
+.txt{white-space:pre-wrap;background:#fff;border:1px solid var(--line);border-radius:7px;padding:10px;min-height:110px}
 .cm{border-left:3px solid var(--gold);background:#fbf6e6;padding:6px 10px;margin:6px 0;border-radius:0 7px 7px 0}.cm.done{opacity:.55;border-color:var(--ok)}
 .cm b{color:var(--navy)}ul.ck{margin:4px 0 8px;padding-left:20px;color:var(--mute)}
 .bar{height:6px;background:#ece5cf;border-radius:9px;overflow:hidden}.bar i{display:block;height:100%;background:var(--gold)}.bar i.full{background:var(--ok)}
@@ -97,7 +97,7 @@ function renderS(){
  $('#mine').innerHTML=S.comments.filter(c=>c.part===PARTS[me]).reverse().map(c=>`<div class="cm ${c.done?'done':''}"><b>${esc(c.tag)}</b> · ${esc(c.text)} ${c.done?'':`<button class="alt" style="padding:2px 10px" data-d="${c.id}">Done</button>`}</div>`).join('')||'<p class="mono">Teacher comments for your part appear here.</p>';
  document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>post({action:'done',id:b.dataset.d,i:me,pw}));
  $('#others').innerHTML=PARTS.map((n,i)=>i===me?'':`<div class="card"><b>${HEADS[i]}</b> <span class="mono">${esc(S.parts[i].student)} · ${wc(txt(i))} words</span><div class="txt">${esc(txt(i))||'<span class="mono">Not started</span>'}</div></div>`).join('')}
-function upW(){twUpdate();const n=wc($('#ta').value),t=TARGET[me];$('#wc').textContent=n+' / ~'+t+' words';const b=$('#br');b.style.width=Math.min(100,n/t*100)+'%';b.className=n>=t?'full':''}
+function upW(){twUpdate();{const t=$('#ta');t.style.height='auto';t.style.height=t.scrollHeight+2+'px'}const n=wc($('#ta').value),t=TARGET[me];$('#wc').textContent=n+' / ~'+t+' words';const b=$('#br');b.style.width=Math.min(100,n/t*100)+'%';b.className=n>=t?'full':''}
 function queue(status,help){clearTimeout(saveT);setMsg('Typing…');saveT=setTimeout(()=>flush(status,help),1600)}
 async function flush(status){clearTimeout(saveT);if(!S||me<0)return;const p=S.parts[me],ta=$('#ta');if(!ta)return;
  const st=status||(p.status==='Ready'&&ta.value===p.text?'Ready':ta.value?'Writing':'Not started');
